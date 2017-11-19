@@ -3,7 +3,7 @@ const Hapi = require('hapi');
 const routes = require('./routes.js');
 const constants = require('./constants/constants.js');
 
-const server = new Hapi.Server();
+const server = new Hapi.Server({ debug: { request: ['error'] } });
 
 server.connection({
     port: 8080

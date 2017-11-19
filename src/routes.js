@@ -49,7 +49,7 @@ const routes = [
                     errorMessage: 'Incorrect request, provide username and password in json format'
                 });
             } else {
-                const { username, password } = request.payload;asd
+                const { username, password } = request.payload;
                 const response = await userController.auth( { username, password } );
                 reply( response );
             }
