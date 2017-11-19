@@ -1,36 +1,59 @@
-const bd = require('./../database/bd.js');
+const BirdModel = require('./../models/bird-model.js');
 
-function getAllBirds() {
-    return bd.getBirds();
+function getMyBirds(owner) {
+    return BirdModel.find({ 'owner': owner});
 }
 
 function getPublicBirds() {
-    const birds = bd.getBirds();
-    return birds.filter( x => x.isPublic );
+    const query = BirdModel
+                    .find({ 'isPublic' : true })
+                    .select('name species picture_url');
+    return query;
+}
+
+function getMySpecificBird(owner, guid) {
+    return BirdModel.find({ 'owner': owner, 'guid' : guid});
 }
 
 function createBird(bird) {
-    return bd.createBird(bird);
+    const newBird = convertBirdToModel(bird);
+    return newBird.save();
+}
+
+function convertBirdToModel(bird) {
+    return new BirdModel({
+        owner: bird.owner,
+        name: bird.name,
+        species: bird.species,
+        picture_url: bird.picture_url,
+        guid: bird.guid,
+        isPublic: bird.isPublic
+    });
 }
 
 function getBirdByGuid(guid) {
-    const birds = bd.getBirds();
-    return birds.filter( x => x.guid === guid);
+    return BirdModel.findOne({'guid' : guid});
 }
 
-function updateBirdByGuid(bird, guid) {
-    const birds = bd.getBirds();
-    const indexUpdatedBird = birds.findIndex( x => x.guid === guid);
-    return bd.updateBird(indexUpdatedBird, bird);
+function updateBirdByGuid(bird, newBird) {
+    updateBirdModel(bird, newBird);
+    return bird.save();
+}
+
+function updateBirdModel(bird, newBird) {
+    bird.owner = newBird.owner;
+    bird.name = newBird.name;
+    bird.species = newBird.species;
+    bird.picture_url = newBird.picture_url;
+    bird.isPublic = newBird.isPublic;
 }
 
 function deleteBirdByGuid(guid) {
-    const birds = bd.getBirds();
-    const indexUpdatedBird = birds.findIndex( x => x.guid === guid);
-    return bd.deleteBird(indexUpdatedBird);
+    return BirdModel.remove({ 'guid' : guid });
 }
 
 module.exports = {
     'getPublicBirds' : getPublicBirds, 'createBird' : createBird, 'getBirdByGuid' : getBirdByGuid,
-    'updateBirdByGuid' : updateBirdByGuid, 'getAllBirds' : getAllBirds, 'deleteBirdByGuid' : deleteBirdByGuid
+    'updateBirdByGuid' : updateBirdByGuid, 'getMySpecificBird' : getMySpecificBird, 'deleteBirdByGuid' : deleteBirdByGuid,
+    'getMyBirds' : getMyBirds
 };

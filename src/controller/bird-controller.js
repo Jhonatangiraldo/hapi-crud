@@ -1,7 +1,7 @@
 const birdService = require('./../service/bird-service.js');
 
 function getPublicBirds() {
-    return birdService.getPublicFieldsBirds( 'name', 'species', 'picture_url' );
+    return birdService.getPublicFieldsBirds();
 }
 
 function getMyBirds(owner) {
@@ -12,8 +12,8 @@ function getMySpecificBird(owner, guid) {
     return birdService.getMySpecificBird(owner, guid);
 }
 
-function createBird(bird) {
-    return birdService.createBird(bird);
+function createBird(bird, owner) {
+    return birdService.createBird(bird, owner);
 }
 
 function getBirdByGuid(guid) {

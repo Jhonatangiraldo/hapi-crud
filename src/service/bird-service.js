@@ -1,37 +1,38 @@
 const birdRepository = require('./../repository/bird-repository.js');
+const GUID = require('node-uuid');
 
 function getPublicFieldsBirds(...fields) {
-    const birds = birdRepository.getPublicBirds();
-    const fieldsBirds = birds.map( bird => {
-        let newBird = {};
-        fields.forEach( field => {
-            newBird[field] = bird[field];
-        });
-        return newBird;
-    });
-    return fieldsBirds;
+    return birdRepository.getPublicBirds();
 }
 
 function getMyBirds(owner) {
-    const allBirds = birdRepository.getAllBirds();
-    return allBirds.filter( x => x.owner === owner );
+    return birdRepository.getMyBirds(owner);
 }
 
 function getMySpecificBird(owner, guid) {
-    const allBirds = birdRepository.getAllBirds();
-    return allBirds.filter( x => x.owner === owner && x.guid === guid );
+    return birdRepository.getMySpecificBird(owner, guid);
 }
 
-function createBird(bird) {
-    return birdRepository.createBird(bird);
+function createBird(bird, owner) {
+    const guid = GUID.v4();
+    const newBird = {
+        owner: owner,
+        name: bird.name,
+        species: bird.species,
+        picture_url: bird.picture_url,
+        guid,
+        isPublic: bird.isPublic
+    };
+    return birdRepository.createBird(newBird);
 }
 
 function getBirdByGuid(guid) {
     return birdRepository.getBirdByGuid(guid);
 }
 
-function updateBirdByGuid(bird, guid) {
-    return birdRepository.updateBirdByGuid(bird, guid);
+async function updateBirdByGuid(newBird, guid) {
+    const bird = await birdRepository.getBirdByGuid(guid);
+    return birdRepository.updateBirdByGuid(bird, newBird);
 }
 
 function deleteBirdByGuid(guid) {

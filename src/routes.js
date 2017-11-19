@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const GUID = require('node-uuid');
 // Controllers
 const birdController = require('./controller/bird-controller.js');
 const userController = require('./controller/user-controller.js');
@@ -7,17 +6,51 @@ const userController = require('./controller/user-controller.js');
 // array which can be then iterated over and each route can be attached.
 const routes = [
     {
+        path: '/createUser',
+        method: 'POST',
+        config: {
+            auth: {
+                strategy: 'token',
+            },
+            pre: [
+                {
+                    method: ( request, reply ) => {
+                        const { user } = request.payload;
+                        if (!user || !user.name || !user.username || !user.password || !user.email) {
+                            reply({
+                                error: true,
+                                errMessage: `please provide an user with name, username, password and email`
+                            }).takeover();
+                        } else {
+                            return reply.continue();
+                        }
+                    }
+                }
+            ]
+        },
+        handler: async( request, reply ) => {
+            const { user } = request.payload;
+            let createdUser = await userController.createUser(user);
+            // To don't show the hashed password, instead of it show the plain password
+            createdUser.password = user.password;
+            reply({
+                created: true,
+                user: createdUser
+            });
+        }
+    },
+    {
         path: '/auth',
         method: 'POST',
-        handler: ( request, reply ) => {
+        handler: async( request, reply ) => {
             if (!request.payload || !request.payload.username || !request.payload.password) {
                 reply({
                     error: true,
                     errorMessage: 'Incorrect request, provide username and password in json format'
                 });
             } else {
-                const { username, password } = request.payload;
-                const response = userController.auth( { username, password } );
+                const { username, password } = request.payload;asd
+                const response = await userController.auth( { username, password } );
                 reply( response );
             }
         }
@@ -25,8 +58,8 @@ const routes = [
     {
         path: '/publicBirds',
         method: 'GET',
-        handler: ( request, reply ) => {
-            const birds = birdController.getPublicBirds();
+        handler: async( request, reply ) => {
+            const birds = await birdController.getPublicBirds();
             reply({
                 data: birds,
                 count: birds.length
@@ -41,9 +74,9 @@ const routes = [
                 strategy: 'token',
             }
         },
-        handler: ( request, reply ) => {
+        handler: async( request, reply ) => {
             const owner = request.auth.credentials.scope;
-            const result = birdController.getMyBirds(owner);
+            const result = await birdController.getMyBirds(owner);
             reply( result );
         }
     },
@@ -55,10 +88,10 @@ const routes = [
                 strategy: 'token',
             }
         },
-        handler: ( request, reply ) => {
+        handler: async( request, reply ) => {
             const owner = request.auth.credentials.scope;
             const { birdGuid } = request.params;
-            const result = birdController.getMySpecificBird(owner, birdGuid);
+            const result = await birdController.getMySpecificBird(owner, birdGuid);
             reply( result );
         }
     },
@@ -70,18 +103,9 @@ const routes = [
                 strategy: 'token',
             }
         },
-        handler: ( request, reply ) => {
+        handler: async( request, reply ) => {
             const { bird } = request.payload;
-            const guid = GUID.v4();
-
-            const newBird = {
-                    owner: request.auth.credentials.scope,
-                    name: bird.name,
-                    species: bird.species,
-                    picture_url: bird.picture_url,
-                    guid,
-            };
-            const savedBird = birdController.createBird(newBird);
+            const savedBird = await birdController.createBird(bird, request.auth.credentials.scope);
             const result = {
                 success : true,
                 savedBird
@@ -98,10 +122,10 @@ const routes = [
             },
             pre: [
                     {
-                        method: ( request, reply ) => {
+                        method: async( request, reply ) => {
                             const { birdGuid } = request.params;
                             const { scope } = request.auth.credentials;
-                            const bird = birdController.getBirdByGuid(birdGuid)[0];
+                            const bird = await birdController.getBirdByGuid(birdGuid);
                             if( !bird ) {
                                 reply({
                                     error: true,
@@ -119,7 +143,7 @@ const routes = [
                     }
             ]
         },
-        handler: ( request, reply ) => {
+        handler: async( request, reply ) => {
             const { birdGuid } = request.params;
             const { bird } = request.payload;
             if (!birdGuid || !bird) {
@@ -128,8 +152,11 @@ const routes = [
                     errorMessage: 'Provide the bird and bird guid'
                 });
             } else {
-                const result = birdController.updateBirdByGuid(bird, birdGuid);
-                reply( result );
+                const result = await birdController.updateBirdByGuid(bird, birdGuid);
+                reply({
+                    updated: true,
+                    updatedBird: result
+                });
             }
         }
     },
@@ -142,10 +169,10 @@ const routes = [
             },
             pre: [
                     {
-                        method: ( request, reply ) => {
+                        method: async( request, reply ) => {
                             const { birdGuid } = request.params;
                             const { scope } = request.auth.credentials;
-                            const bird = birdController.getBirdByGuid(birdGuid)[0];
+                            const bird = await birdController.getBirdByGuid(birdGuid);
                             if( !bird ) {
                                 reply({
                                     error: true,
@@ -163,7 +190,7 @@ const routes = [
                     }
             ]
         },
-        handler: ( request, reply ) => {
+        handler: async( request, reply ) => {
             const { birdGuid } = request.params;
             if (!birdGuid) {
                 reply({
@@ -171,11 +198,9 @@ const routes = [
                     errorMessage: 'Provide the bird and bird guid'
                 });
             } else {
-                const result = birdController.deleteBirdByGuid(birdGuid);
-                reply({
-                    deleted: true,
-                    deletedBird: result
-                });
+                const operation = await birdController.deleteBirdByGuid(birdGuid);
+                const deleted = operation.result.n ? true : false;
+                reply({ deleted });
             }
         }
     }
